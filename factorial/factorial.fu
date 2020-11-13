@@ -1,0 +1,2 @@
+//prints n!, where n is user input
+read;fac;write;exit;
