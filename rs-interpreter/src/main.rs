@@ -1,3 +1,16 @@
+/*
+language specs:
+    run by running this interpreter with the file path to the program as the first argument
+
+
+
+
+
+
+*/
+
+
+
 //shuddup rustc
 #![allow(unused_variables)]
 #![allow(unused_mut)]
@@ -56,11 +69,11 @@ fn main() {
     let mut lines: Vec<&str> = lines.split("\r\n").collect();
     lines.retain(|&s| !s.starts_with("//") && s != " ");
 
-    // three bit registers
-    // #0 is I/O, #1 is 0 (haha)
-    let mut registers = vec!(0,0,0,0,0,0,0,0);
-    // gee bill your mom lets you have six instructions
-    let instructions = vec!("add","set", "read", "write","dont", "jump", "exit"); //currently unused, may add validity checking later
+    // two bit registers
+    // #0 is I/O
+    let mut registers = vec!(0,0,0,0);
+    // gee bill your mom lets you have seven instructions
+    let instructions = vec!("add","addi", "regset", "read", "write","dont", "do", "exit"); //currently unused, may add validity checking later
     let mut i = 0;
     let mut jumper = 0;
     'main: while i < lines.len(){
@@ -68,18 +81,25 @@ fn main() {
         //if it's empty we don't need to run all of this, optimization!
         if lines[i] != ""{
         match components[0] {
-            //sets r1 to r2 + r3
+            //sets r1 to r1 + r2
             "add" => {
-                let mut regs = vec!(0, 0, 0);
-                for i in 1..3{
-                    regs [i-2] = reg_to_int(components[i]);
+                let mut regs = vec!(0, 0);
+                for i in 1..2{
+                    regs[i-1] = reg_to_int(components[i]);
                 }
-                registers[regs[0]] = registers[regs[1]] + registers [regs[2]];
+                registers[regs[0]] = registers[regs[0]] + registers [regs[1]];
             }
-            // li
-            "set" => {
+            // addi
+            "addi" => {
                 let mut regs = reg_to_int(components[1]);
-                registers[regs] = components[2].parse::<i32>().unwrap()
+                registers[regs] += components[2].parse::<i32>().unwrap()
+            }
+            "regset" => {
+                let mut regs = vec!(0,0);
+                for i in 1..2{
+                    regs[i-1] = reg_to_int(components[i])
+                }
+                registers[regs[0]] = registers[regs[1]]
             }
             //reads to #0
             "read" => {
@@ -89,19 +109,15 @@ fn main() {
             "write" => {
                 println!("{}", registers[0]);
             }
-            //ignores next jump if rs > rt condition is filled
+            //doesn't jump if r1 >= r2 condition is filled, else jumps 10 up
             "dont" => {
                 let mut regs = vec!(0,0);
                 for i in 1..2 {
                     regs[i-1] = reg_to_int(components[i])
                 }
-                if registers[regs[0]] > registers[regs[1]]{
+                if registers[regs[0]] >= registers[regs[1]]{
                     jumper = 1;
                 }
-            }
-
-            //always jumps ten lines up
-            "jump" => {
                 if jumper == 0 {
                     if (i - 10) >= 1{
                         i -= 10;
@@ -115,6 +131,29 @@ fn main() {
                     jumper = 0;
                 }
             }
+            // doesn't jump 10 down if r1 >= r2
+            "do" => {
+                let mut regs = vec!(0,0);
+                for i in 1..2 {
+                    regs[i-1] = reg_to_int(components[i])
+                }
+                if registers[regs[0]] >= registers[regs[1]]{
+                    jumper = 1;
+                }
+                if jumper == 0 {
+                    if (i + 10) <= lines.len(){
+                        i += 10;
+                        registers[regs[0]] -= 1;
+                    }
+                    else {
+                        println!("{}", "Tried to jump out of bounds");
+                        break 'main;
+                    }
+                }
+                else {
+                    jumper = 0;
+                }
+            }            
             //exits program
             "exit" => {
                 break 'main;
