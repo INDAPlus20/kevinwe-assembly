@@ -13,6 +13,39 @@ fn read_input() -> String {
     io::stdin().read_line(&mut input).expect("Failed reading input");
     return input;
 }
+fn reg_to_int(str: &str) -> usize {
+    match str {
+        "#0" => {
+            return 0;
+        }
+        "#1" => {
+            return 1;
+        }
+        "#2" => {
+            return 2;
+        }
+        "#3" => {
+            return 3;
+        }
+        "#4" => {
+            return 4;
+        }
+        "#5" => {
+            return 5;
+        }
+        "#6" => {
+            return 6;
+        }
+        "#7" => {
+            return 7;
+        }
+        _ => {
+            println!("{}", "Registry must be #0 .. #7!");
+            return 999;
+        }
+    }
+}
+
 fn main() {
     // Tack Isak för den fina inputkoden!
     // get input file
@@ -24,18 +57,29 @@ fn main() {
     lines.retain(|&s| !s.starts_with("//") && s != " ");
 
     // three bit registers
-    // #0 is I/O
+    // #0 is I/O, #1 is 0 (haha)
     let mut registers = vec!(0,0,0,0,0,0,0,0);
-    // we only have four instructions for the same reason, and we don't even need one of them
-    let instructions = vec!("add", "read", "write","dont", "jump", "exit"); //currently unused, may add validity checking later
+    // gee bill your mom lets you have six instructions
+    let instructions = vec!("add","set", "read", "write","dont", "jump", "exit"); //currently unused, may add validity checking later
     let mut i = 0;
     let mut jumper = 0;
     'main: while i < lines.len(){
         let mut components: Vec<&str> = lines[i].split(";").collect();
+        //if it's empty we don't need to run all of this, optimization!
+        if lines[i] != ""{
         match components[0] {
-            //adds second given registry to first given registry
+            //sets r1 to r2 + r3
             "add" => {
-                
+                let mut regs = vec!(0, 0, 0);
+                for i in 1..3{
+                    regs [i-2] = reg_to_int(components[i]);
+                }
+                registers[regs[0]] = registers[regs[1]] + registers [regs[2]];
+            }
+            // li
+            "set" => {
+                let mut regs = reg_to_int(components[1]);
+                registers[regs] = components[2].parse::<i32>().unwrap()
             }
             //reads to #0
             "read" => {
@@ -47,10 +91,15 @@ fn main() {
             }
             //ignores next jump if rs > rt condition is filled
             "dont" => {
-                if components[1] > components[2]{
+                let mut regs = vec!(0,0);
+                for i in 1..2 {
+                    regs[i-1] = reg_to_int(components[i])
+                }
+                if registers[regs[0]] > registers[regs[1]]{
                     jumper = 1;
                 }
             }
+
             //always jumps ten lines up
             "jump" => {
                 if jumper == 0 {
@@ -76,6 +125,7 @@ fn main() {
             } 
         }
         i += 1;
+    }
     }
 }
 
